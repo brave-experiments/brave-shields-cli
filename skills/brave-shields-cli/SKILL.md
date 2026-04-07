@@ -22,6 +22,10 @@ brave-shields-cli profiles [--channel <channel>] [--format json|table]
 The `--channel` flag selects which Brave installation to target: `release` (default), `beta`, `nightly`, `dev`.
 Can also be set via the `BRAVE_SHIELDS_CLI_CHANNEL` environment variable. `--channel` overrides the env var, and `--brave-dir` overrides both.
 
+## Platform support
+
+This tool supports macOS and Linux only. On unsupported platforms, use `--brave-dir <path>` to specify the Brave data directory manually.
+
 ## Settings and valid values
 
 | Setting | Valid values |

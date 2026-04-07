@@ -2,6 +2,11 @@
 
 CLI tool to read and write Brave Shields settings. The tool operates on per-website preferences by modifying the local profile `Preferences` JSON file directly.
 
+## Supported platforms
+
+- **macOS** and **Linux** are supported with automatic profile detection.
+- **Windows** is not supported. You can use `--brave-dir <path>` to point at a Brave data directory manually as a workaround.
+
 ## Install
 
 ```bash
