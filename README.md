@@ -2,8 +2,6 @@
 
 CLI tool to read and write Brave Shields per-site preferences by modifying the profile `Preferences` JSON file directly.
 
-Note: this works because Shield `content_settings` exceptions are not HMAC-protected in Secure Preferences, so direct modification is safe.
-
 ## Install
 
 ```bash
