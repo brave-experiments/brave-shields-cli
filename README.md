@@ -1,6 +1,6 @@
-# brave-shields-cli-cli
+# brave-shields-cli
 
-CLI tool to read and write Brave Shields per-site preferences by modifying the profile `Preferences` JSON file directly.
+CLI tool to read and write Brave Shields settings. The tool operates on per-website preferences by modifying the local profile `Preferences` JSON file directly.
 
 ## Install
 
@@ -12,6 +12,11 @@ cargo install --path .
 
 ```bash
 brave-shields-cli <command> [options]
+```
+
+For more info, see:
+```bash
+brave-shields-cli --help
 ```
 
 ### Commands
@@ -89,7 +94,7 @@ The channel can also be set via the `BRAVE_SHIELDS_CLI_CHANNEL` environment vari
 
 The tool reads and writes entries under `account_values.profile.content_settings.exceptions` in the Brave profile's `Preferences` JSON file. Each shield setting maps to one or more keys in that object, with domain entries keyed as `"domain.com,*"`.
 
-Writes are atomic (temp file + rename). If Brave is running when you write, a warning is printed to stderr -- changes take effect on next browser launch.
+Writes are atomic (temp file + rename). If Brave is running when you write, a warning is printed to stderr and changes take effect on next browser launch.
 
 ## Tests
 
@@ -97,4 +102,4 @@ Writes are atomic (temp file + rename). If Brave is running when you write, a wa
 cargo test
 ```
 
-All tests use temp directories with fixture JSON files -- no real Brave profile is needed.
+All tests use temp directories with fixture JSON files; no real Brave profile is needed.
