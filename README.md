@@ -65,6 +65,18 @@ brave-shields-cli reset example.com
 brave-shields-cli reset example.com fingerprinting
 ```
 
+#### filters
+
+Manage custom adblock filter rules. These are stored globally in `Local State` (not per-profile), matching what you see at `brave://adblock` under "Custom filters".
+
+```bash
+brave-shields-cli filters list
+brave-shields-cli filters add "||example.com^"
+brave-shields-cli filters add "example.com##h1"
+brave-shields-cli filters remove "||example.com^"
+brave-shields-cli filters clear
+```
+
 #### profiles
 
 List available browser profiles.

@@ -122,6 +122,31 @@ pub fn print_profiles(profiles: &[crate::profile::ProfileInfo], format: OutputFo
     }
 }
 
+/// Output for the `filters list` command.
+pub fn print_filters(filters: &[String], format: OutputFormat) {
+    match format {
+        OutputFormat::Json => {
+            let output = json!({
+                "custom_filters": filters,
+            });
+            println!("{}", serde_json::to_string_pretty(&output).unwrap());
+        }
+        OutputFormat::Table => {
+            if filters.is_empty() {
+                println!("No custom filter rules.");
+                return;
+            }
+            let mut table = Table::new();
+            table.set_content_arrangement(ContentArrangement::Dynamic);
+            table.set_header(vec!["Rule"]);
+            for rule in filters {
+                table.add_row(vec![rule.as_str()]);
+            }
+            println!("{table}");
+        }
+    }
+}
+
 /// Output for the `set` command.
 pub fn print_set(domain: &str, setting: &str, value: &str) {
     eprintln!("Set {} = {} for {}", setting, value, domain);

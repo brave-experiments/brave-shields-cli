@@ -59,6 +59,33 @@ fn run_cmd(args: &[&str], brave_dir: &Path) -> (String, String, bool) {
     (stdout, stderr, output.status.success())
 }
 
+fn setup_fixture_with_local_state(prefs: &Value, local_state: &Value) -> tempfile::TempDir {
+    let tmp = tempfile::tempdir().unwrap();
+    let brave_dir = tmp.path();
+
+    fs::write(
+        brave_dir.join("Local State"),
+        serde_json::to_string_pretty(local_state).unwrap(),
+    )
+    .unwrap();
+
+    let profile_dir = brave_dir.join("Default");
+    fs::create_dir_all(&profile_dir).unwrap();
+    fs::write(
+        profile_dir.join("Preferences"),
+        serde_json::to_string_pretty(prefs).unwrap(),
+    )
+    .unwrap();
+
+    tmp
+}
+
+fn read_local_state(brave_dir: &Path) -> Value {
+    let path = brave_dir.join("Local State");
+    let content = fs::read_to_string(path).unwrap();
+    serde_json::from_str(&content).unwrap()
+}
+
 fn read_prefs(brave_dir: &Path) -> Value {
     let path = brave_dir.join("Default/Preferences");
     let content = fs::read_to_string(path).unwrap();
@@ -544,4 +571,169 @@ fn test_multiple_sets_then_list() {
     assert_eq!(output[0]["overrides"]["shields"], "off");
     assert_eq!(output[0]["overrides"]["fingerprinting"], "aggressive");
     assert_eq!(output[0]["overrides"]["scripts"], "block");
+}
+
+// ==================== FILTERS command tests ====================
+
+fn local_state_with_filters(filters: &str) -> Value {
+    json!({
+        "profile": {
+            "last_used": "Default",
+            "info_cache": {
+                "Default": {"name": "Test Profile"}
+            }
+        },
+        "brave": {
+            "ad_block": {
+                "custom_filters": filters
+            }
+        }
+    })
+}
+
+#[test]
+fn test_filters_list_empty() {
+    let tmp = setup_fixture(&json!({}));
+    let (stdout, _, success) = run_cmd(&["filters", "list"], tmp.path());
+    assert!(success);
+    let output: Value = serde_json::from_str(&stdout).unwrap();
+    assert_eq!(output["custom_filters"].as_array().unwrap().len(), 0);
+}
+
+#[test]
+fn test_filters_list_with_entries() {
+    let ls = local_state_with_filters("||example.com^\nexample.com##h1");
+    let tmp = setup_fixture_with_local_state(&json!({}), &ls);
+    let (stdout, _, success) = run_cmd(&["filters", "list"], tmp.path());
+    assert!(success);
+    let output: Value = serde_json::from_str(&stdout).unwrap();
+    let filters = output["custom_filters"].as_array().unwrap();
+    assert_eq!(filters.len(), 2);
+    assert_eq!(filters[0], "||example.com^");
+    assert_eq!(filters[1], "example.com##h1");
+}
+
+#[test]
+fn test_filters_list_skips_blank_lines() {
+    let ls = local_state_with_filters("||a.com^\n\n||b.com^\n\n");
+    let tmp = setup_fixture_with_local_state(&json!({}), &ls);
+    let (stdout, _, success) = run_cmd(&["filters", "list"], tmp.path());
+    assert!(success);
+    let output: Value = serde_json::from_str(&stdout).unwrap();
+    let filters = output["custom_filters"].as_array().unwrap();
+    assert_eq!(filters.len(), 2);
+}
+
+#[test]
+fn test_filters_add() {
+    let tmp = setup_fixture(&json!({}));
+    let (_, _, success) = run_cmd(&["filters", "add", "||example.com^"], tmp.path());
+    assert!(success);
+    let ls = read_local_state(tmp.path());
+    let filters = ls["brave"]["ad_block"]["custom_filters"].as_str().unwrap();
+    assert!(filters.contains("||example.com^"));
+}
+
+#[test]
+fn test_filters_add_to_existing() {
+    let ls = local_state_with_filters("||old.com^");
+    let tmp = setup_fixture_with_local_state(&json!({}), &ls);
+    let (_, _, success) = run_cmd(&["filters", "add", "||new.com^"], tmp.path());
+    assert!(success);
+    let ls = read_local_state(tmp.path());
+    let filters = ls["brave"]["ad_block"]["custom_filters"].as_str().unwrap();
+    assert!(filters.contains("||old.com^"));
+    assert!(filters.contains("||new.com^"));
+}
+
+#[test]
+fn test_filters_add_no_duplicate() {
+    let ls = local_state_with_filters("||example.com^");
+    let tmp = setup_fixture_with_local_state(&json!({}), &ls);
+    let (_, _, success) = run_cmd(&["filters", "add", "||example.com^"], tmp.path());
+    assert!(success);
+    let ls = read_local_state(tmp.path());
+    let filters = ls["brave"]["ad_block"]["custom_filters"].as_str().unwrap();
+    let count = filters.lines().filter(|l| l.trim() == "||example.com^").count();
+    assert_eq!(count, 1);
+}
+
+#[test]
+fn test_filters_remove() {
+    let ls = local_state_with_filters("||a.com^\n||b.com^\n||c.com^");
+    let tmp = setup_fixture_with_local_state(&json!({}), &ls);
+    let (_, _, success) = run_cmd(&["filters", "remove", "||b.com^"], tmp.path());
+    assert!(success);
+    let ls = read_local_state(tmp.path());
+    let filters = ls["brave"]["ad_block"]["custom_filters"].as_str().unwrap();
+    assert!(filters.contains("||a.com^"));
+    assert!(!filters.contains("||b.com^"));
+    assert!(filters.contains("||c.com^"));
+}
+
+#[test]
+fn test_filters_remove_nonexistent() {
+    let ls = local_state_with_filters("||a.com^");
+    let tmp = setup_fixture_with_local_state(&json!({}), &ls);
+    let (_, stderr, success) = run_cmd(&["filters", "remove", "||nope.com^"], tmp.path());
+    assert!(success);
+    assert!(stderr.contains("not found"));
+}
+
+#[test]
+fn test_filters_clear() {
+    let ls = local_state_with_filters("||a.com^\n||b.com^");
+    let tmp = setup_fixture_with_local_state(&json!({}), &ls);
+    let (_, _, success) = run_cmd(&["filters", "clear"], tmp.path());
+    assert!(success);
+    let ls = read_local_state(tmp.path());
+    let filters = ls["brave"]["ad_block"]["custom_filters"].as_str().unwrap();
+    assert!(filters.is_empty());
+}
+
+#[test]
+fn test_filters_add_then_list() {
+    let tmp = setup_fixture(&json!({}));
+    run_cmd(&["filters", "add", "||example.com^"], tmp.path());
+    run_cmd(&["filters", "add", "example.com##h1"], tmp.path());
+    let (stdout, _, success) = run_cmd(&["filters", "list"], tmp.path());
+    assert!(success);
+    let output: Value = serde_json::from_str(&stdout).unwrap();
+    let filters = output["custom_filters"].as_array().unwrap();
+    assert_eq!(filters.len(), 2);
+}
+
+#[test]
+fn test_filters_add_then_remove_then_list() {
+    let tmp = setup_fixture(&json!({}));
+    run_cmd(&["filters", "add", "||a.com^"], tmp.path());
+    run_cmd(&["filters", "add", "||b.com^"], tmp.path());
+    run_cmd(&["filters", "remove", "||a.com^"], tmp.path());
+    let (stdout, _, success) = run_cmd(&["filters", "list"], tmp.path());
+    assert!(success);
+    let output: Value = serde_json::from_str(&stdout).unwrap();
+    let filters = output["custom_filters"].as_array().unwrap();
+    assert_eq!(filters.len(), 1);
+    assert_eq!(filters[0], "||b.com^");
+}
+
+#[test]
+fn test_filters_clear_then_list() {
+    let ls = local_state_with_filters("||a.com^\n||b.com^");
+    let tmp = setup_fixture_with_local_state(&json!({}), &ls);
+    run_cmd(&["filters", "clear"], tmp.path());
+    let (stdout, _, success) = run_cmd(&["filters", "list"], tmp.path());
+    assert!(success);
+    let output: Value = serde_json::from_str(&stdout).unwrap();
+    assert_eq!(output["custom_filters"].as_array().unwrap().len(), 0);
+}
+
+#[test]
+fn test_filters_preserves_other_local_state() {
+    let ls = local_state_with_filters("||old.com^");
+    let tmp = setup_fixture_with_local_state(&json!({}), &ls);
+    run_cmd(&["filters", "add", "||new.com^"], tmp.path());
+    let ls = read_local_state(tmp.path());
+    // Profile info should be preserved
+    assert_eq!(ls["profile"]["last_used"], "Default");
 }

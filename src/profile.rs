@@ -1,22 +1,14 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
-use serde_json::Value;
+
+use crate::local_state::read_local_state;
 
 /// Information about a Brave profile.
 #[derive(Debug, Clone)]
 pub struct ProfileInfo {
     pub dir_name: String,
     pub display_name: String,
-}
-
-/// Read and parse the Local State file from the Brave data directory.
-fn read_local_state(brave_dir: &Path) -> Result<Value> {
-    let path = brave_dir.join("Local State");
-    let content = std::fs::read_to_string(&path)
-        .with_context(|| format!("failed to read Local State at {}", path.display()))?;
-    serde_json::from_str(&content)
-        .with_context(|| "failed to parse Local State as JSON")
 }
 
 /// List all profiles from the Local State info_cache.

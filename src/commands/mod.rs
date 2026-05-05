@@ -1,3 +1,4 @@
+pub mod filters;
 pub mod get;
 pub mod list;
 pub mod profiles;
