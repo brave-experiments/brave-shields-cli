@@ -5,36 +5,9 @@ argument-hint: <action> [args...]
 allowed-tools: Bash Read
 ---
 
-You are helping the user manage Brave Shields per-site preferences using the `brave-shields-cli` CLI tool.
+You are helping the user manage Brave Shields preferences using the `brave-shields-cli` CLI tool.
 
-## Available commands
-
-```bash
-brave-shields-cli get <domain> [--channel <channel>] [--profile <name>] [--format json|table]
-brave-shields-cli set <domain> <setting> <value> [--channel <channel>] [--profile <name>]
-brave-shields-cli list [--channel <channel>] [--profile <name>] [--format json|table]
-brave-shields-cli reset <domain> [<setting>] [--channel <channel>] [--profile <name>]
-brave-shields-cli profiles [--channel <channel>] [--format json|table]
-```
-
-## Channel selection
-
-The `--channel` flag selects which Brave installation to target: `release` (default), `beta`, `nightly`, `dev`.
-Can also be set via the `BRAVE_SHIELDS_CLI_CHANNEL` environment variable. `--channel` overrides the env var, and `--brave-dir` overrides both.
-
-## Platform support
-
-This tool supports macOS and Linux only. On unsupported platforms, use `--brave-dir <path>` to specify the Brave data directory manually.
-
-## Settings and valid values
-
-| Setting | Valid values |
-|---------|-------------|
-| shields | on, off |
-| ads | standard, aggressive, disabled |
-| fingerprinting | standard, aggressive, disabled |
-| https-upgrade | standard, strict, disabled |
-| scripts | allow, block |
+For full usage details, run `brave-shields-cli --help` or `brave-shields-cli <command> --help`.
 
 ## Instructions
 
@@ -44,6 +17,6 @@ Parse the user's arguments: `$ARGUMENTS`
 - If the user asks something vague like "show me everything" or "what's set", run `brave-shields-cli list --format table`.
 - If the user asks about a specific domain without specifying an action, run `brave-shields-cli get <domain> --format table`.
 - Prefer `--format table` for interactive use unless the user asks for JSON.
-- If Brave is running, the CLI will warn on stderr. Relay that warning to the user.
+- Write commands (set, reset, filters add/remove/clear) will error if Brave is running. Relay that error to the user and suggest quitting Brave first or using `--force`.
 - If no arguments are provided, run `brave-shields-cli list --format table` and show the results.
 - If the user mentions a specific channel (beta, nightly, dev), pass `--channel <channel>` to the command.
