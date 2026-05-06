@@ -97,10 +97,9 @@ fn read_prefs(brave_dir: &Path) -> Value {
 #[test]
 fn test_get_domain_with_overrides() {
     let prefs = json!({
-        "account_values": {
-            "profile": {
-                "content_settings": {
-                    "exceptions": {
+        "profile": {
+            "content_settings": {
+                "exceptions": {
                         "braveShields": {
                             "example.com,*": {"setting": 2, "last_modified": "123"}
                         },
@@ -111,7 +110,7 @@ fn test_get_domain_with_overrides() {
                 }
             }
         }
-    });
+    );
     let tmp = setup_fixture(&prefs);
     let (stdout, _, success) = run_cmd(&["get", "example.com"], tmp.path());
     assert!(success);
@@ -164,7 +163,7 @@ fn test_set_shields_off() {
     let (_, _, success) = run_cmd(&["set", "example.com", "shields", "off"], tmp.path());
     assert!(success);
     let prefs = read_prefs(tmp.path());
-    let entry = &prefs["account_values"]["profile"]["content_settings"]["exceptions"]["braveShields"]["example.com,*"];
+    let entry = &prefs["profile"]["content_settings"]["exceptions"]["braveShields"]["example.com,*"];
     assert_eq!(entry["setting"], 2);
 }
 
@@ -174,7 +173,7 @@ fn test_set_shields_on() {
     let (_, _, success) = run_cmd(&["set", "example.com", "shields", "on"], tmp.path());
     assert!(success);
     let prefs = read_prefs(tmp.path());
-    let entry = &prefs["account_values"]["profile"]["content_settings"]["exceptions"]["braveShields"]["example.com,*"];
+    let entry = &prefs["profile"]["content_settings"]["exceptions"]["braveShields"]["example.com,*"];
     assert_eq!(entry["setting"], 1);
 }
 
@@ -184,7 +183,7 @@ fn test_set_fingerprinting_disabled() {
     let (_, _, success) = run_cmd(&["set", "example.com", "fingerprinting", "disabled"], tmp.path());
     assert!(success);
     let prefs = read_prefs(tmp.path());
-    let entry = &prefs["account_values"]["profile"]["content_settings"]["exceptions"]["fingerprintingV2"]["example.com,*"];
+    let entry = &prefs["profile"]["content_settings"]["exceptions"]["fingerprintingV2"]["example.com,*"];
     assert_eq!(entry["setting"], 1);
 }
 
@@ -194,7 +193,7 @@ fn test_set_fingerprinting_aggressive() {
     let (_, _, success) = run_cmd(&["set", "example.com", "fingerprinting", "aggressive"], tmp.path());
     assert!(success);
     let prefs = read_prefs(tmp.path());
-    let entry = &prefs["account_values"]["profile"]["content_settings"]["exceptions"]["fingerprintingV2"]["example.com,*"];
+    let entry = &prefs["profile"]["content_settings"]["exceptions"]["fingerprintingV2"]["example.com,*"];
     assert_eq!(entry["setting"], 2);
 }
 
@@ -204,7 +203,7 @@ fn test_set_fingerprinting_standard() {
     let (_, _, success) = run_cmd(&["set", "example.com", "fingerprinting", "standard"], tmp.path());
     assert!(success);
     let prefs = read_prefs(tmp.path());
-    let entry = &prefs["account_values"]["profile"]["content_settings"]["exceptions"]["fingerprintingV2"]["example.com,*"];
+    let entry = &prefs["profile"]["content_settings"]["exceptions"]["fingerprintingV2"]["example.com,*"];
     assert_eq!(entry["setting"], 3);
 }
 
@@ -214,7 +213,7 @@ fn test_set_https_strict() {
     let (_, _, success) = run_cmd(&["set", "example.com", "https-upgrade", "strict"], tmp.path());
     assert!(success);
     let prefs = read_prefs(tmp.path());
-    let entry = &prefs["account_values"]["profile"]["content_settings"]["exceptions"]["httpsUpgrades"]["example.com,*"];
+    let entry = &prefs["profile"]["content_settings"]["exceptions"]["httpsUpgrades"]["example.com,*"];
     assert_eq!(entry["setting"], 2);
 }
 
@@ -224,7 +223,7 @@ fn test_set_scripts_block() {
     let (_, _, success) = run_cmd(&["set", "example.com", "scripts", "block"], tmp.path());
     assert!(success);
     let prefs = read_prefs(tmp.path());
-    let entry = &prefs["account_values"]["profile"]["content_settings"]["exceptions"]["javascript"]["example.com,*"];
+    let entry = &prefs["profile"]["content_settings"]["exceptions"]["javascript"]["example.com,*"];
     assert_eq!(entry["setting"], 2);
 }
 
@@ -234,7 +233,7 @@ fn test_set_ads_standard() {
     let (_, _, success) = run_cmd(&["set", "example.com", "ads", "standard"], tmp.path());
     assert!(success);
     let prefs = read_prefs(tmp.path());
-    let exceptions = &prefs["account_values"]["profile"]["content_settings"]["exceptions"];
+    let exceptions = &prefs["profile"]["content_settings"]["exceptions"];
     assert_eq!(exceptions["shieldsAds"]["example.com,*"]["setting"], 2);
     assert_eq!(exceptions["trackers"]["example.com,*"]["setting"], 2);
     assert_eq!(exceptions["cosmeticFilteringV2"]["example.com,*"]["setting"]["cosmeticFilteringV2"], 2);
@@ -246,7 +245,7 @@ fn test_set_ads_aggressive() {
     let (_, _, success) = run_cmd(&["set", "example.com", "ads", "aggressive"], tmp.path());
     assert!(success);
     let prefs = read_prefs(tmp.path());
-    let exceptions = &prefs["account_values"]["profile"]["content_settings"]["exceptions"];
+    let exceptions = &prefs["profile"]["content_settings"]["exceptions"];
     assert_eq!(exceptions["shieldsAds"]["example.com,*"]["setting"], 2);
     assert_eq!(exceptions["trackers"]["example.com,*"]["setting"], 2);
     assert_eq!(exceptions["cosmeticFilteringV2"]["example.com,*"]["setting"]["cosmeticFilteringV2"], 1);
@@ -258,7 +257,7 @@ fn test_set_ads_disabled() {
     let (_, _, success) = run_cmd(&["set", "example.com", "ads", "disabled"], tmp.path());
     assert!(success);
     let prefs = read_prefs(tmp.path());
-    let exceptions = &prefs["account_values"]["profile"]["content_settings"]["exceptions"];
+    let exceptions = &prefs["profile"]["content_settings"]["exceptions"];
     assert_eq!(exceptions["shieldsAds"]["example.com,*"]["setting"], 1);
     assert_eq!(exceptions["trackers"]["example.com,*"]["setting"], 1);
     assert_eq!(exceptions["cosmeticFilteringV2"]["example.com,*"]["setting"]["cosmeticFilteringV2"], 0);
@@ -267,10 +266,9 @@ fn test_set_ads_disabled() {
 #[test]
 fn test_set_overwrites_existing() {
     let prefs = json!({
-        "account_values": {
-            "profile": {
-                "content_settings": {
-                    "exceptions": {
+        "profile": {
+            "content_settings": {
+                "exceptions": {
                         "braveShields": {
                             "example.com,*": {"setting": 1, "last_modified": "100"}
                         }
@@ -278,12 +276,12 @@ fn test_set_overwrites_existing() {
                 }
             }
         }
-    });
+    );
     let tmp = setup_fixture(&prefs);
     let (_, _, success) = run_cmd(&["set", "example.com", "shields", "off"], tmp.path());
     assert!(success);
     let prefs = read_prefs(tmp.path());
-    let entry = &prefs["account_values"]["profile"]["content_settings"]["exceptions"]["braveShields"]["example.com,*"];
+    let entry = &prefs["profile"]["content_settings"]["exceptions"]["braveShields"]["example.com,*"];
     assert_eq!(entry["setting"], 2);
 }
 
@@ -293,7 +291,7 @@ fn test_set_generates_last_modified() {
     let (_, _, success) = run_cmd(&["set", "example.com", "shields", "on"], tmp.path());
     assert!(success);
     let prefs = read_prefs(tmp.path());
-    let entry = &prefs["account_values"]["profile"]["content_settings"]["exceptions"]["braveShields"]["example.com,*"];
+    let entry = &prefs["profile"]["content_settings"]["exceptions"]["braveShields"]["example.com,*"];
     let lm = entry["last_modified"].as_str().unwrap();
     assert!(!lm.is_empty());
     assert!(lm.chars().all(|c| c.is_ascii_digit()));
@@ -302,10 +300,9 @@ fn test_set_generates_last_modified() {
 #[test]
 fn test_set_preserves_other_domains() {
     let prefs = json!({
-        "account_values": {
-            "profile": {
-                "content_settings": {
-                    "exceptions": {
+        "profile": {
+            "content_settings": {
+                "exceptions": {
                         "braveShields": {
                             "other.com,*": {"setting": 1, "last_modified": "100"}
                         }
@@ -313,12 +310,12 @@ fn test_set_preserves_other_domains() {
                 }
             }
         }
-    });
+    );
     let tmp = setup_fixture(&prefs);
     let (_, _, success) = run_cmd(&["set", "example.com", "shields", "off"], tmp.path());
     assert!(success);
     let prefs = read_prefs(tmp.path());
-    let shields = &prefs["account_values"]["profile"]["content_settings"]["exceptions"]["braveShields"];
+    let shields = &prefs["profile"]["content_settings"]["exceptions"]["braveShields"];
     assert_eq!(shields["other.com,*"]["setting"], 1);
     assert_eq!(shields["example.com,*"]["setting"], 2);
 }
@@ -337,10 +334,9 @@ fn test_list_empty() {
 #[test]
 fn test_list_multiple_domains() {
     let prefs = json!({
-        "account_values": {
-            "profile": {
-                "content_settings": {
-                    "exceptions": {
+        "profile": {
+            "content_settings": {
+                "exceptions": {
                         "braveShields": {
                             "a.com,*": {"setting": 2, "last_modified": "1"},
                             "b.com,*": {"setting": 1, "last_modified": "2"}
@@ -352,7 +348,7 @@ fn test_list_multiple_domains() {
                 }
             }
         }
-    });
+    );
     let tmp = setup_fixture(&prefs);
     let (stdout, _, success) = run_cmd(&["list"], tmp.path());
     assert!(success);
@@ -367,10 +363,9 @@ fn test_list_multiple_domains() {
 #[test]
 fn test_list_deduplicates_domains() {
     let prefs = json!({
-        "account_values": {
-            "profile": {
-                "content_settings": {
-                    "exceptions": {
+        "profile": {
+            "content_settings": {
+                "exceptions": {
                         "braveShields": {
                             "example.com,*": {"setting": 2, "last_modified": "1"}
                         },
@@ -381,7 +376,7 @@ fn test_list_deduplicates_domains() {
                 }
             }
         }
-    });
+    );
     let tmp = setup_fixture(&prefs);
     let (stdout, _, success) = run_cmd(&["list"], tmp.path());
     assert!(success);
@@ -406,10 +401,9 @@ fn test_list_json_format() {
 #[test]
 fn test_reset_all_for_domain() {
     let prefs = json!({
-        "account_values": {
-            "profile": {
-                "content_settings": {
-                    "exceptions": {
+        "profile": {
+            "content_settings": {
+                "exceptions": {
                         "braveShields": {
                             "example.com,*": {"setting": 2, "last_modified": "1"}
                         },
@@ -420,12 +414,12 @@ fn test_reset_all_for_domain() {
                 }
             }
         }
-    });
+    );
     let tmp = setup_fixture(&prefs);
     let (_, _, success) = run_cmd(&["reset", "example.com"], tmp.path());
     assert!(success);
     let prefs = read_prefs(tmp.path());
-    let exceptions = &prefs["account_values"]["profile"]["content_settings"]["exceptions"];
+    let exceptions = &prefs["profile"]["content_settings"]["exceptions"];
     assert!(exceptions["braveShields"]["example.com,*"].is_null());
     assert!(exceptions["fingerprintingV2"]["example.com,*"].is_null());
 }
@@ -433,10 +427,9 @@ fn test_reset_all_for_domain() {
 #[test]
 fn test_reset_single_setting() {
     let prefs = json!({
-        "account_values": {
-            "profile": {
-                "content_settings": {
-                    "exceptions": {
+        "profile": {
+            "content_settings": {
+                "exceptions": {
                         "braveShields": {
                             "example.com,*": {"setting": 2, "last_modified": "1"}
                         },
@@ -447,12 +440,12 @@ fn test_reset_single_setting() {
                 }
             }
         }
-    });
+    );
     let tmp = setup_fixture(&prefs);
     let (_, _, success) = run_cmd(&["reset", "example.com", "fingerprinting"], tmp.path());
     assert!(success);
     let prefs = read_prefs(tmp.path());
-    let exceptions = &prefs["account_values"]["profile"]["content_settings"]["exceptions"];
+    let exceptions = &prefs["profile"]["content_settings"]["exceptions"];
     // fingerprinting should be removed
     assert!(exceptions["fingerprintingV2"]["example.com,*"].is_null());
     // shields should be preserved
@@ -462,10 +455,9 @@ fn test_reset_single_setting() {
 #[test]
 fn test_reset_ads_removes_all_three() {
     let prefs = json!({
-        "account_values": {
-            "profile": {
-                "content_settings": {
-                    "exceptions": {
+        "profile": {
+            "content_settings": {
+                "exceptions": {
                         "shieldsAds": {
                             "example.com,*": {"setting": 2, "last_modified": "1"}
                         },
@@ -479,12 +471,12 @@ fn test_reset_ads_removes_all_three() {
                 }
             }
         }
-    });
+    );
     let tmp = setup_fixture(&prefs);
     let (_, _, success) = run_cmd(&["reset", "example.com", "ads"], tmp.path());
     assert!(success);
     let prefs = read_prefs(tmp.path());
-    let exceptions = &prefs["account_values"]["profile"]["content_settings"]["exceptions"];
+    let exceptions = &prefs["profile"]["content_settings"]["exceptions"];
     assert!(exceptions["shieldsAds"]["example.com,*"].is_null());
     assert!(exceptions["trackers"]["example.com,*"].is_null());
     assert!(exceptions["cosmeticFilteringV2"]["example.com,*"].is_null());
@@ -500,10 +492,9 @@ fn test_reset_nonexistent_domain() {
 #[test]
 fn test_reset_preserves_other_domains() {
     let prefs = json!({
-        "account_values": {
-            "profile": {
-                "content_settings": {
-                    "exceptions": {
+        "profile": {
+            "content_settings": {
+                "exceptions": {
                         "braveShields": {
                             "example.com,*": {"setting": 2, "last_modified": "1"},
                             "other.com,*": {"setting": 1, "last_modified": "2"}
@@ -512,12 +503,12 @@ fn test_reset_preserves_other_domains() {
                 }
             }
         }
-    });
+    );
     let tmp = setup_fixture(&prefs);
     let (_, _, success) = run_cmd(&["reset", "example.com"], tmp.path());
     assert!(success);
     let prefs = read_prefs(tmp.path());
-    let shields = &prefs["account_values"]["profile"]["content_settings"]["exceptions"]["braveShields"];
+    let shields = &prefs["profile"]["content_settings"]["exceptions"]["braveShields"];
     assert!(shields["example.com,*"].is_null());
     assert_eq!(shields["other.com,*"]["setting"], 1);
 }
@@ -736,4 +727,68 @@ fn test_filters_preserves_other_local_state() {
     let ls = read_local_state(tmp.path());
     // Profile info should be preserved
     assert_eq!(ls["profile"]["last_used"], "Default");
+}
+
+// ==================== --pattern flag tests ====================
+
+#[test]
+fn test_set_with_raw_pattern() {
+    let tmp = setup_fixture(&json!({}));
+    let (_, _, success) = run_cmd(&["set", "*,*", "shields", "off", "--pattern"], tmp.path());
+    assert!(success);
+    let prefs = read_prefs(tmp.path());
+    let entry = &prefs["profile"]["content_settings"]["exceptions"]["braveShields"]["*,*"];
+    assert_eq!(entry["setting"], 2);
+}
+
+#[test]
+fn test_get_with_raw_pattern() {
+    let prefs = json!({
+        "profile": {
+            "content_settings": {
+                "exceptions": {
+                        "braveShields": {
+                            "*,*": {"setting": 2, "last_modified": "123"}
+                        }
+                    }
+                }
+            }
+        }
+    );
+    let tmp = setup_fixture(&prefs);
+    let (stdout, _, success) = run_cmd(&["get", "*,*", "--pattern"], tmp.path());
+    assert!(success);
+    let output: Value = serde_json::from_str(&stdout).unwrap();
+    assert_eq!(output["settings"]["shields"], "off");
+}
+
+#[test]
+fn test_reset_with_raw_pattern() {
+    let prefs = json!({
+        "profile": {
+            "content_settings": {
+                "exceptions": {
+                        "braveShields": {
+                            "*,*": {"setting": 2, "last_modified": "123"}
+                        }
+                    }
+                }
+            }
+        }
+    );
+    let tmp = setup_fixture(&prefs);
+    let (_, _, success) = run_cmd(&["reset", "*,*", "--pattern"], tmp.path());
+    assert!(success);
+    let prefs = read_prefs(tmp.path());
+    assert!(prefs["profile"]["content_settings"]["exceptions"]["braveShields"]["*,*"].is_null());
+}
+
+#[test]
+fn test_set_then_get_with_pattern() {
+    let tmp = setup_fixture(&json!({}));
+    run_cmd(&["set", "*,*", "shields", "off", "--pattern"], tmp.path());
+    let (stdout, _, success) = run_cmd(&["get", "*,*", "--pattern"], tmp.path());
+    assert!(success);
+    let output: Value = serde_json::from_str(&stdout).unwrap();
+    assert_eq!(output["settings"]["shields"], "off");
 }

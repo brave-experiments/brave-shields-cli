@@ -34,23 +34,33 @@ struct Cli {
     /// Output format: json or table
     #[arg(long, global = true, default_value = "json")]
     format: String,
+
+    /// Write even if Brave is running (changes may be overwritten by the browser)
+    #[arg(long, global = true)]
+    force: bool,
 }
 
 #[derive(Subcommand)]
 enum Command {
     /// Show shield settings for a domain
     Get {
-        /// Domain to query (e.g. example.com)
+        /// Domain to query (e.g. example.com), or a raw match pattern with --pattern
         domain: String,
+        /// Treat the domain argument as a raw Chromium match pattern (e.g. "*,*" for global)
+        #[arg(long)]
+        pattern: bool,
     },
     /// Set a shield setting for a domain
     Set {
-        /// Domain to modify (e.g. example.com)
+        /// Domain to modify (e.g. example.com), or a raw match pattern with --pattern
         domain: String,
         /// Setting name (shields, ads, fingerprinting, https-upgrade, scripts)
         setting: String,
         /// Value to set (depends on setting)
         value: String,
+        /// Treat the domain argument as a raw Chromium match pattern (e.g. "*,*" for global)
+        #[arg(long)]
+        pattern: bool,
     },
     /// List all per-site shield overrides
     List,
@@ -58,10 +68,13 @@ enum Command {
     Profiles,
     /// Reset shield settings for a domain
     Reset {
-        /// Domain to reset (e.g. example.com)
+        /// Domain to reset (e.g. example.com), or a raw match pattern with --pattern
         domain: String,
         /// Specific setting to reset (omit to reset all)
         setting: Option<String>,
+        /// Treat the domain argument as a raw Chromium match pattern (e.g. "*,*" for global)
+        #[arg(long)]
+        pattern: bool,
     },
     /// Manage custom adblock filter rules
     Filters {
@@ -103,11 +116,11 @@ fn main() -> Result<()> {
     if let Command::Filters { ref action } = cli.command {
         match action {
             FiltersAction::List => commands::filters::run_list(&brave_dir, format)?,
-            FiltersAction::Add { rule } => commands::filters::run_add(&brave_dir, rule, channel)?,
+            FiltersAction::Add { rule } => commands::filters::run_add(&brave_dir, rule, channel, cli.force)?,
             FiltersAction::Remove { rule } => {
-                commands::filters::run_remove(&brave_dir, rule, channel)?
+                commands::filters::run_remove(&brave_dir, rule, channel, cli.force)?
             }
-            FiltersAction::Clear => commands::filters::run_clear(&brave_dir, channel)?,
+            FiltersAction::Clear => commands::filters::run_clear(&brave_dir, channel, cli.force)?,
         }
         return Ok(());
     }
@@ -116,21 +129,22 @@ fn main() -> Result<()> {
     let prefs_path = profile::preferences_path(&brave_dir, &profile_info);
 
     match cli.command {
-        Command::Get { domain } => {
-            commands::get::run(&prefs_path, &domain, &profile_info.display_name, format)?;
+        Command::Get { domain, pattern } => {
+            commands::get::run(&prefs_path, &domain, pattern, &profile_info.display_name, format)?;
         }
         Command::Set {
             domain,
             setting,
             value,
+            pattern,
         } => {
-            commands::set::run(&prefs_path, &domain, &setting, &value, channel)?;
+            commands::set::run(&prefs_path, &domain, pattern, &setting, &value, channel, cli.force)?;
         }
         Command::List => {
             commands::list::run(&prefs_path, format)?;
         }
-        Command::Reset { domain, setting } => {
-            commands::reset::run(&prefs_path, &domain, setting.as_deref(), channel)?;
+        Command::Reset { domain, setting, pattern } => {
+            commands::reset::run(&prefs_path, &domain, pattern, setting.as_deref(), channel, cli.force)?;
         }
         Command::Profiles | Command::Filters { .. } => unreachable!(),
     }

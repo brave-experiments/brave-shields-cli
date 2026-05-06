@@ -11,7 +11,6 @@ use crate::platform::Channel;
 
 /// The path within the Preferences JSON where shield exceptions live.
 const EXCEPTIONS_PATH: &[&str] = &[
-    "account_values",
     "profile",
     "content_settings",
     "exceptions",
@@ -166,8 +165,9 @@ fn brave_process_names(channel: Channel) -> &'static [&'static str] {
     }
 }
 
-/// Check if a specific Brave channel is currently running, warn to stderr if so.
-pub fn warn_if_brave_running(channel: Channel) {
+/// Check if a specific Brave channel is currently running.
+/// Errors by default; pass `force: true` to downgrade to a warning.
+pub fn check_brave_not_running(channel: Channel, force: bool) -> Result<()> {
     use sysinfo::System;
     let s = System::new_all();
     let expected_names = brave_process_names(channel);
@@ -176,12 +176,20 @@ pub fn warn_if_brave_running(channel: Channel) {
         expected_names.iter().any(|expected| name == *expected)
     });
     if brave_running {
-        eprintln!(
-            "warning: Brave {} appears to be running. \
-             Changes may not take effect until it is restarted.",
-            channel
-        );
+        if force {
+            eprintln!(
+                "warning: Brave {} appears to be running. \
+                 Changes may be overwritten by the browser.",
+                channel
+            );
+        } else {
+            anyhow::bail!(
+                "Brave {} is running. Quit the browser first, or use --force to write anyway.",
+                channel
+            );
+        }
     }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -192,15 +200,13 @@ mod tests {
     #[test]
     fn test_read_exceptions() {
         let prefs = json!({
-            "account_values": {
-                "profile": {
-                    "content_settings": {
-                        "exceptions": {
-                            "braveShields": {
-                                "example.com,*": {
-                                    "last_modified": "123",
-                                    "setting": 2
-                                }
+            "profile": {
+                "content_settings": {
+                    "exceptions": {
+                        "braveShields": {
+                            "example.com,*": {
+                                "last_modified": "123",
+                                "setting": 2
                             }
                         }
                     }
@@ -227,15 +233,13 @@ mod tests {
     #[test]
     fn test_write_preserves_existing() {
         let mut prefs = json!({
-            "account_values": {
-                "profile": {
-                    "content_settings": {
-                        "exceptions": {
-                            "braveShields": {
-                                "existing.com,*": {
-                                    "last_modified": "100",
-                                    "setting": 1
-                                }
+            "profile": {
+                "content_settings": {
+                    "exceptions": {
+                        "braveShields": {
+                            "existing.com,*": {
+                                "last_modified": "100",
+                                "setting": 1
                             }
                         }
                     }
@@ -261,7 +265,7 @@ mod tests {
             json!({"setting": 1, "last_modified": "0"}),
         );
         assert!(prefs
-            .pointer("/account_values/profile/content_settings/exceptions/braveShields/test.com,*")
+            .pointer("/profile/content_settings/exceptions/braveShields/test.com,*")
             .is_some());
         assert_eq!(prefs["some_other_key"], true);
     }

@@ -1,6 +1,6 @@
 # brave-shields-cli
 
-CLI tool to read and write Brave Shields settings. The tool operates on per-website preferences by modifying the local profile `Preferences` JSON file directly.
+CLI tool to read and write Brave Shields settings.
 
 ## Supported platforms
 
@@ -11,6 +11,26 @@ CLI tool to read and write Brave Shields settings. The tool operates on per-webs
 
 ```bash
 cargo install --path .
+```
+
+## Quick start
+
+Disable Shields for example.com on Brave Release:
+
+```bash
+brave-shields-cli set example.com shields off
+```
+
+Disable Shields globally (all sites):
+
+```bash
+brave-shields-cli set "https://*,*" shields off --pattern
+```
+
+To target a specific channel (e.g. Nightly):
+
+```bash
+brave-shields-cli --channel nightly set example.com shields off
 ```
 
 ## Usage
@@ -97,6 +117,21 @@ brave-shields-cli profiles --format table
 
 The channel can also be set via the `BRAVE_SHIELDS_CLI_CHANNEL` environment variable. The `--channel` flag takes precedence over the env var.
 
+### Raw match patterns
+
+By default, the `get`, `set`, and `reset` commands treat the domain argument as a domain name and convert it to a Chromium content settings pattern (`domain.com,*`). Pass `--pattern` to use a raw match pattern instead. This is useful for targeting the global default or other non-standard patterns:
+
+```bash
+# Disable shields globally
+brave-shields-cli set "https://*,*" shields off --pattern
+
+# Check global shield settings
+brave-shields-cli get "https://*,*" --pattern
+
+# Reset global override
+brave-shields-cli reset "https://*,*" --pattern
+```
+
 ## Settings reference
 
 | Setting | Valid values | Notes |
@@ -109,9 +144,13 @@ The channel can also be set via the `BRAVE_SHIELDS_CLI_CHANNEL` environment vari
 
 ## How it works
 
-The tool reads and writes entries under `account_values.profile.content_settings.exceptions` in the Brave profile's `Preferences` JSON file. Each shield setting maps to one or more keys in that object, with domain entries keyed as `"domain.com,*"`.
+The tool reads and writes entries under `profile.content_settings.exceptions` in the Brave profile's `Preferences` JSON file. Each shield setting maps to one or more keys in that object, with domain entries keyed as `"domain.com,*"`.
 
-Writes are atomic (temp file + rename). If Brave is running when you write, a warning is printed to stderr and changes take effect on next browser launch.
+To edit custom filters, `brave-shields-cli` works on the `Local State` file (not per-profile).
+
+Making changes to Shields settings requires a browser restart to be picked up.
+
+Writes are atomic (temp file + rename).
 
 ## Tests
 
@@ -119,4 +158,4 @@ Writes are atomic (temp file + rename). If Brave is running when you write, a wa
 cargo test
 ```
 
-All tests use temp directories with fixture JSON files; no real Brave profile is needed.
+All tests use temp directories with fixture JSON files.

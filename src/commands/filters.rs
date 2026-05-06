@@ -14,12 +14,12 @@ pub fn run_list(brave_dir: &Path, format: OutputFormat) -> Result<()> {
     Ok(())
 }
 
-pub fn run_add(brave_dir: &Path, filter: &str, channel: Channel) -> Result<()> {
+pub fn run_add(brave_dir: &Path, filter: &str, channel: Channel, force: bool) -> Result<()> {
     let filter = filter.trim();
     anyhow::ensure!(!filter.is_empty(), "filter rule must not be empty");
 
     let ls_path = brave_dir.join("Local State");
-    preferences::warn_if_brave_running(channel);
+    preferences::check_brave_not_running(channel, force)?;
 
     local_state::locked_read_modify_write(&ls_path, |state| {
         let filters_str = state
@@ -56,12 +56,12 @@ pub fn run_add(brave_dir: &Path, filter: &str, channel: Channel) -> Result<()> {
     Ok(())
 }
 
-pub fn run_remove(brave_dir: &Path, filter: &str, channel: Channel) -> Result<()> {
+pub fn run_remove(brave_dir: &Path, filter: &str, channel: Channel, force: bool) -> Result<()> {
     let filter = filter.trim();
     anyhow::ensure!(!filter.is_empty(), "filter rule must not be empty");
 
     let ls_path = brave_dir.join("Local State");
-    preferences::warn_if_brave_running(channel);
+    preferences::check_brave_not_running(channel, force)?;
 
     let mut found = false;
     local_state::locked_read_modify_write(&ls_path, |state| {
@@ -97,9 +97,9 @@ pub fn run_remove(brave_dir: &Path, filter: &str, channel: Channel) -> Result<()
     Ok(())
 }
 
-pub fn run_clear(brave_dir: &Path, channel: Channel) -> Result<()> {
+pub fn run_clear(brave_dir: &Path, channel: Channel, force: bool) -> Result<()> {
     let ls_path = brave_dir.join("Local State");
-    preferences::warn_if_brave_running(channel);
+    preferences::check_brave_not_running(channel, force)?;
 
     local_state::locked_read_modify_write(&ls_path, |state| {
         if state.pointer("/brave/ad_block/custom_filters").is_some() {

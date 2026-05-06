@@ -8,7 +8,7 @@ use crate::platform::Channel;
 use crate::preferences;
 use crate::shields::{self, ShieldSetting};
 
-pub fn run(prefs_path: &Path, domain: &str, setting_name: &str, value: &str, channel: Channel) -> Result<()> {
+pub fn run(prefs_path: &Path, domain: &str, raw_pattern: bool, setting_name: &str, value: &str, channel: Channel, force: bool) -> Result<()> {
     let setting = ShieldSetting::from_cli(setting_name)?;
 
     // Validate the value
@@ -21,11 +21,11 @@ pub fn run(prefs_path: &Path, domain: &str, setting_name: &str, value: &str, cha
         );
     }
 
-    let pattern = shields::domain_pattern(domain)?;
+    let pattern = shields::resolve_pattern(domain, raw_pattern)?;
     let timestamp = chromium_time::now()?;
     let entries = shields::to_stored(setting, value, &timestamp)?;
 
-    preferences::warn_if_brave_running(channel);
+    preferences::check_brave_not_running(channel, force)?;
     preferences::locked_read_modify_write(prefs_path, |prefs| {
         for (json_key, entry_value) in &entries {
             let exception_entries = preferences::get_exception_entries_mut(prefs, json_key);

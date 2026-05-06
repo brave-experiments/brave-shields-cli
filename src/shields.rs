@@ -99,6 +99,18 @@ pub fn domain_pattern(domain: &str) -> Result<String> {
     Ok(format!("{},*", domain))
 }
 
+/// Resolve the Chromium content settings pattern from user input.
+/// If `raw_pattern` is true, the input is used as-is (must not be empty).
+/// Otherwise, it is treated as a domain and converted to "domain,*".
+pub fn resolve_pattern(input: &str, raw_pattern: bool) -> Result<String> {
+    if raw_pattern {
+        ensure!(!input.is_empty(), "pattern must not be empty");
+        Ok(input.to_string())
+    } else {
+        domain_pattern(input)
+    }
+}
+
 /// Extract the domain from a pattern key like "example.com,*".
 pub fn domain_from_pattern(pattern: &str) -> Option<&str> {
     pattern.strip_suffix(",*")

@@ -10,11 +10,12 @@ use crate::shields::{self, ShieldSetting};
 pub fn run(
     prefs_path: &Path,
     domain: &str,
+    raw_pattern: bool,
     profile_name: &str,
     format: OutputFormat,
 ) -> Result<()> {
     let prefs = preferences::read_preferences(prefs_path)?;
-    let pattern = shields::domain_pattern(domain)?;
+    let pattern = shields::resolve_pattern(domain, raw_pattern)?;
     let mut settings = BTreeMap::new();
 
     for &setting in ShieldSetting::ALL {
