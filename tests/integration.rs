@@ -51,7 +51,7 @@ fn run_cmd(args: &[&str], brave_dir: &Path) -> (String, String, bool) {
     let bin = binary_path();
     let output = Command::new(&bin)
         .args(args)
-        .args(["--brave-dir", brave_dir.to_str().unwrap()])
+        .args(["--brave-dir", brave_dir.to_str().unwrap(), "--force"])
         .output()
         .expect("failed to run binary");
     let stdout = String::from_utf8_lossy(&output.stdout).to_string();
