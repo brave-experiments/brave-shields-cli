@@ -93,6 +93,11 @@ pub fn write_preferences(path: &Path, prefs: &Value) -> Result<()> {
 }
 
 /// Open the Preferences file with an exclusive lock, read-modify-write, then release the lock.
+///
+/// Note: the lock is held on the original file descriptor. After atomic rename via
+/// `persist()`, the locked fd points to the old inode. A concurrent process opening
+/// the file after the rename would not see the lock. This is acceptable for a
+/// single-user CLI tool but would not be safe under concurrent writers.
 pub fn locked_read_modify_write(
     path: &Path,
     modify: impl FnOnce(&mut Value),

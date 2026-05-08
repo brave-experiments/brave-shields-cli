@@ -96,7 +96,10 @@ brave-shields-cli filters add "example.com##h1"
 brave-shields-cli filters remove "||example.com^"
 brave-shields-cli filters clear
 brave-shields-cli filters load rules.txt
+brave-shields-cli filters bisect rules.txt
 ```
+
+The `bisect` command performs an interactive binary search to find which filter rule in a file is causing a site issue. It loads all rules, then iteratively exceptions out half the candidates with `@@` prefixes, asking at each step whether the issue persists. A working file (`bisect-filters.txt`) and state file (`bisect-state.json`) are written to the current directory. Original filters are restored when bisect completes. If interrupted or quit mid-session, the state is preserved and can be resumed with `--resume bisect-state.json`.
 
 #### profiles
 

@@ -1,3 +1,4 @@
+pub mod bisect;
 pub mod filters;
 pub mod get;
 pub mod list;

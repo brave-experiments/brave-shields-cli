@@ -39,6 +39,7 @@ impl Channel {
             Channel::Dev => "Brave-Browser-Development",
         }
     }
+
 }
 
 /// Return the Brave Browser data directory for a given channel.

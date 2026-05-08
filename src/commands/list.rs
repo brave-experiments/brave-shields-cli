@@ -38,10 +38,9 @@ fn collect_setting_overrides(
     };
 
     for (pattern, entry) in entries {
-        let domain = match shields::domain_from_pattern(pattern) {
-            Some(d) => d.to_string(),
-            None => continue,
-        };
+        let domain = shields::domain_from_pattern(pattern)
+            .unwrap_or(pattern)
+            .to_string();
 
         let primary_value = match shields::read_setting_value(entry) {
             Some(v) => v,

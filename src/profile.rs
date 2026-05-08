@@ -48,6 +48,9 @@ pub fn resolve_profile(brave_dir: &Path, profile_arg: Option<&str>) -> Result<Pr
                 .and_then(|v| v.as_str())
                 .context("Local State missing profile.last_used")?;
 
+            // Note: if last_used contained / or ~, the JSON pointer would be
+            // incorrect per RFC 6901. In practice Chromium profile dir names are
+            // always simple strings like "Default" or "Profile 1".
             let display_name = local_state
                 .pointer(&format!("/profile/info_cache/{}/name", last_used))
                 .and_then(|v| v.as_str())

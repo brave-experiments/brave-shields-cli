@@ -104,6 +104,17 @@ enum FiltersAction {
         /// Path to a file containing filter rules (one per line)
         file: String,
     },
+    /// Binary search to find which filter rule causes a site issue
+    Bisect {
+        /// Path to a file containing filter rules (one per line)
+        file: Option<String>,
+        /// Resume a previous bisect session from its state file
+        #[arg(long)]
+        resume: Option<String>,
+        /// Directory to write state and working files (default: current directory)
+        #[arg(long)]
+        output_dir: Option<String>,
+    },
 }
 
 fn main() -> Result<()> {
@@ -128,6 +139,15 @@ fn main() -> Result<()> {
             FiltersAction::Clear => commands::filters::run_clear(&brave_dir, channel, cli.force)?,
             FiltersAction::Load { file } => {
                 commands::filters::run_load(&brave_dir, file, channel, cli.force)?
+            }
+            FiltersAction::Bisect { file, resume, output_dir } => {
+                commands::bisect::run(
+                    &brave_dir,
+                    file.as_deref(),
+                    resume.as_deref(),
+                    output_dir.as_deref(),
+                    channel,
+                )?
             }
         }
         return Ok(());
