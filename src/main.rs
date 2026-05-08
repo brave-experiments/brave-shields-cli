@@ -99,6 +99,11 @@ enum FiltersAction {
     },
     /// Remove all custom filter rules
     Clear,
+    /// Load custom filter rules from a file (replaces existing filters)
+    Load {
+        /// Path to a file containing filter rules (one per line)
+        file: String,
+    },
 }
 
 fn main() -> Result<()> {
@@ -121,6 +126,9 @@ fn main() -> Result<()> {
                 commands::filters::run_remove(&brave_dir, rule, channel, cli.force)?
             }
             FiltersAction::Clear => commands::filters::run_clear(&brave_dir, channel, cli.force)?,
+            FiltersAction::Load { file } => {
+                commands::filters::run_load(&brave_dir, file, channel, cli.force)?
+            }
         }
         return Ok(());
     }

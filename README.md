@@ -95,6 +95,7 @@ brave-shields-cli filters add "||example.com^"
 brave-shields-cli filters add "example.com##h1"
 brave-shields-cli filters remove "||example.com^"
 brave-shields-cli filters clear
+brave-shields-cli filters load rules.txt
 ```
 
 #### profiles

@@ -1,3 +1,4 @@
+use std::fs;
 use std::path::Path;
 
 use anyhow::{Context, Result};
@@ -95,6 +96,38 @@ pub fn run_remove(brave_dir: &Path, filter: &str, channel: Channel, force: bool)
         eprintln!("Filter not found: {}", filter);
     }
     Ok(())
+}
+
+pub fn run_load(brave_dir: &Path, file_path: &str, channel: Channel, force: bool) -> Result<()> {
+    let content = fs::read_to_string(file_path)
+        .with_context(|| format!("failed to read filter file: {}", file_path))?;
+    let rules: Vec<&str> = content
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .collect();
+
+    let ls_path = brave_dir.join("Local State");
+    preferences::check_brave_not_running(channel, force)?;
+
+    write_all_filters(&ls_path, &rules.join("\n"))?;
+
+    eprintln!("Loaded {} filter rules from {}", rules.len(), file_path);
+    Ok(())
+}
+
+/// Write an arbitrary string as the full set of custom filters.
+pub fn write_all_filters(ls_path: &Path, filters: &str) -> Result<()> {
+    local_state::locked_read_modify_write(ls_path, |state| {
+        if !state.get("brave").is_some_and(|v| v.is_object()) {
+            state["brave"] = serde_json::json!({});
+        }
+        if !state["brave"].get("ad_block").is_some_and(|v| v.is_object()) {
+            state["brave"]["ad_block"] = serde_json::json!({});
+        }
+        state["brave"]["ad_block"]["custom_filters"] =
+            serde_json::Value::String(filters.to_string());
+    })
+    .context("failed to write custom filters")
 }
 
 pub fn run_clear(brave_dir: &Path, channel: Channel, force: bool) -> Result<()> {
