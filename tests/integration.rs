@@ -792,3 +792,95 @@ fn test_set_then_get_with_pattern() {
     let output: Value = serde_json::from_str(&stdout).unwrap();
     assert_eq!(output["settings"]["shields"], "off");
 }
+
+// ==================== FILTERS LOAD command tests ====================
+
+fn write_rules_file(dir: &Path, rules: &[&str]) -> std::path::PathBuf {
+    let path = dir.join("rules.txt");
+    fs::write(&path, rules.join("\n")).unwrap();
+    path
+}
+
+#[test]
+fn test_filters_load() {
+    let tmp = setup_fixture(&json!({}));
+    let rules_path = write_rules_file(tmp.path(), &["||example.com^", "example.com##h1"]);
+    let (_, _, success) = run_cmd(
+        &["filters", "load", rules_path.to_str().unwrap()],
+        tmp.path(),
+    );
+    assert!(success);
+    let ls = read_local_state(tmp.path());
+    let filters = ls["brave"]["ad_block"]["custom_filters"].as_str().unwrap();
+    assert!(filters.contains("||example.com^"));
+    assert!(filters.contains("example.com##h1"));
+}
+
+#[test]
+fn test_filters_load_replaces_existing() {
+    let ls = local_state_with_filters("||old.com^");
+    let tmp = setup_fixture_with_local_state(&json!({}), &ls);
+    let rules_path = write_rules_file(tmp.path(), &["||new.com^"]);
+    let (_, _, success) = run_cmd(
+        &["filters", "load", rules_path.to_str().unwrap()],
+        tmp.path(),
+    );
+    assert!(success);
+    let ls = read_local_state(tmp.path());
+    let filters = ls["brave"]["ad_block"]["custom_filters"].as_str().unwrap();
+    assert!(!filters.contains("||old.com^"));
+    assert!(filters.contains("||new.com^"));
+}
+
+#[test]
+fn test_filters_load_skips_blank_lines() {
+    let tmp = setup_fixture(&json!({}));
+    let rules_path = write_rules_file(tmp.path(), &["||a.com^", "", "||b.com^", "", ""]);
+    let (_, _, success) = run_cmd(
+        &["filters", "load", rules_path.to_str().unwrap()],
+        tmp.path(),
+    );
+    assert!(success);
+    let (stdout, _, _) = run_cmd(&["filters", "list"], tmp.path());
+    let output: Value = serde_json::from_str(&stdout).unwrap();
+    let filters = output["custom_filters"].as_array().unwrap();
+    assert_eq!(filters.len(), 2);
+}
+
+#[test]
+fn test_filters_load_then_list() {
+    let tmp = setup_fixture(&json!({}));
+    let rules_path = write_rules_file(tmp.path(), &["||a.com^", "||b.com^", "||c.com^"]);
+    run_cmd(
+        &["filters", "load", rules_path.to_str().unwrap()],
+        tmp.path(),
+    );
+    let (stdout, _, success) = run_cmd(&["filters", "list"], tmp.path());
+    assert!(success);
+    let output: Value = serde_json::from_str(&stdout).unwrap();
+    let filters = output["custom_filters"].as_array().unwrap();
+    assert_eq!(filters.len(), 3);
+}
+
+#[test]
+fn test_filters_load_nonexistent_file() {
+    let tmp = setup_fixture(&json!({}));
+    let (_, _, success) = run_cmd(
+        &["filters", "load", "/nonexistent/rules.txt"],
+        tmp.path(),
+    );
+    assert!(!success);
+}
+
+#[test]
+fn test_filters_load_preserves_other_local_state() {
+    let ls = local_state_with_filters("||old.com^");
+    let tmp = setup_fixture_with_local_state(&json!({}), &ls);
+    let rules_path = write_rules_file(tmp.path(), &["||new.com^"]);
+    run_cmd(
+        &["filters", "load", rules_path.to_str().unwrap()],
+        tmp.path(),
+    );
+    let ls = read_local_state(tmp.path());
+    assert_eq!(ls["profile"]["last_used"], "Default");
+}
