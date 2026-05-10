@@ -5,6 +5,7 @@ mod output;
 mod platform;
 mod preferences;
 mod profile;
+mod scriptlets;
 mod shields;
 
 use anyhow::Result;
@@ -81,6 +82,11 @@ enum Command {
         #[command(subcommand)]
         action: FiltersAction,
     },
+    /// Manage custom scriptlets (user-defined JavaScript for adblock injection)
+    Scriptlets {
+        #[command(subcommand)]
+        action: ScriptletsAction,
+    },
 }
 
 #[derive(Subcommand)]
@@ -115,6 +121,31 @@ enum FiltersAction {
         #[arg(long)]
         output_dir: Option<String>,
     },
+}
+
+#[derive(Subcommand)]
+enum ScriptletsAction {
+    /// List all custom scriptlets
+    List,
+    /// Show the content of a specific scriptlet
+    Get {
+        /// Scriptlet name (e.g. user-my-script.js)
+        name: String,
+    },
+    /// Add or update a custom scriptlet from a JavaScript file
+    Add {
+        /// Scriptlet name (must start with "user-" and end with ".js")
+        name: String,
+        /// Path to the JavaScript file
+        file: String,
+    },
+    /// Remove a custom scriptlet
+    Remove {
+        /// Scriptlet name to remove
+        name: String,
+    },
+    /// Remove all custom scriptlets
+    Clear,
 }
 
 fn main() -> Result<()> {
@@ -152,6 +183,22 @@ fn main() -> Result<()> {
         }
         return Ok(());
     }
+    if let Command::Scriptlets { ref action } = cli.command {
+        match action {
+            ScriptletsAction::List => commands::scriptlets::run_list(&brave_dir, format)?,
+            ScriptletsAction::Get { name } => commands::scriptlets::run_get(&brave_dir, name)?,
+            ScriptletsAction::Add { name, file } => {
+                commands::scriptlets::run_add(&brave_dir, name, file, channel, cli.force)?
+            }
+            ScriptletsAction::Remove { name } => {
+                commands::scriptlets::run_remove(&brave_dir, name, channel, cli.force)?
+            }
+            ScriptletsAction::Clear => {
+                commands::scriptlets::run_clear(&brave_dir, channel, cli.force)?
+            }
+        }
+        return Ok(());
+    }
 
     let profile_info = profile::resolve_profile(&brave_dir, cli.profile.as_deref())?;
     let prefs_path = profile::preferences_path(&brave_dir, &profile_info);
@@ -174,7 +221,7 @@ fn main() -> Result<()> {
         Command::Reset { domain, setting, pattern } => {
             commands::reset::run(&prefs_path, &domain, pattern, setting.as_deref(), channel, cli.force)?;
         }
-        Command::Profiles | Command::Filters { .. } => unreachable!(),
+        Command::Profiles | Command::Filters { .. } | Command::Scriptlets { .. } => unreachable!(),
     }
 
     Ok(())

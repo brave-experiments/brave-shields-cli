@@ -240,12 +240,12 @@ fn make_exception(rule: &str) -> String {
     if rule.starts_with("@@") || rule.starts_with("#@#") {
         return rule.to_string();
     }
-    // Cosmetic filter: contains ## (but not scriptlet ###+js)
+    // Cosmetic or scriptlet filter: contains ##
+    // Both cosmetic (##.ad) and scriptlet (##+js(...)) use #@# for exceptions.
+    // The @@ prefix is only for network rules.
     if let Some(pos) = rule.find("##") {
-        if !rule[pos..].starts_with("###+") {
-            let (domain, selector) = rule.split_at(pos);
-            return format!("{}#@#{}", domain, &selector[2..]);
-        }
+        let (domain, selector) = rule.split_at(pos);
+        return format!("{}#@#{}", domain, &selector[2..]);
     }
     format!("@@{}", rule)
 }
@@ -682,10 +682,20 @@ mod tests {
 
     #[test]
     fn test_make_exception_scriptlet() {
-        // Scriptlet injection: ###+js(...) should get @@ prefix, not #@#
+        // Scriptlet injection uses ##+js(...) syntax (two hashes, not three).
+        // Exception replaces ## with #@#.
         assert_eq!(
-            make_exception("example.com###+js(abort-on-property-read, foo)"),
-            "@@example.com###+js(abort-on-property-read, foo)"
+            make_exception("example.com##+js(abort-on-property-read, foo)"),
+            "example.com#@#+js(abort-on-property-read, foo)"
+        );
+    }
+
+    #[test]
+    fn test_make_exception_scriptlet_no_domain() {
+        // Global scriptlet: ##+js(...) with no domain
+        assert_eq!(
+            make_exception("##+js(abort-on-property-read, foo)"),
+            "#@#+js(abort-on-property-read, foo)"
         );
     }
 

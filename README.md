@@ -101,6 +101,19 @@ brave-shields-cli filters bisect rules.txt
 
 The `bisect` command performs an interactive binary search to find which filter rule in a file is causing a site issue. It loads all rules, then iteratively exceptions out half the candidates with `@@` prefixes, asking at each step whether the issue persists. A working file (`bisect-filters.txt`) and state file (`bisect-state.json`) are written to the current directory. Original filters are restored when bisect completes. If interrupted or quit mid-session, the state is preserved and can be resumed with `--resume bisect-state.json`.
 
+#### scriptlets
+
+Manage custom scriptlets (user-defined JavaScript for adblock injection). These are stored in a LevelDB database at `Default/AdBlock Custom Resources/` and are shared across profiles.
+
+```bash
+brave-shields-cli scriptlets list
+brave-shields-cli scriptlets get user-my-script.js
+brave-shields-cli scriptlets add user-my-script.js script.js
+brave-shields-cli scriptlets remove user-my-script.js
+```
+
+Scriptlet names must start with `user-` and end with `.js`. Once added, reference them in custom filters with `example.com##+js(user-my-script.js)`.
+
 #### profiles
 
 List available browser profiles.

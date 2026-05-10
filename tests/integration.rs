@@ -1312,3 +1312,173 @@ fn test_bisect_resume_corrupted_all_rules() {
     assert!(!success);
     assert!(stderr.contains("non-string"));
 }
+
+// ==================== SCRIPTLETS command tests ====================
+
+fn write_js_file(dir: &Path, filename: &str, content: &str) -> std::path::PathBuf {
+    let path = dir.join(filename);
+    fs::write(&path, content).unwrap();
+    path
+}
+
+#[test]
+fn test_scriptlets_list_empty() {
+    let tmp = setup_fixture(&json!({}));
+    let (stdout, _, success) = run_cmd(&["scriptlets", "list"], tmp.path());
+    assert!(success);
+    let output: Vec<Value> = serde_json::from_str(&stdout).unwrap();
+    assert!(output.is_empty());
+}
+
+#[test]
+fn test_scriptlets_add_and_list() {
+    let tmp = setup_fixture(&json!({}));
+    let js_path = write_js_file(tmp.path(), "test.js", "console.log('hi')");
+    let (_, _, success) = run_cmd(
+        &["scriptlets", "add", "user-test.js", js_path.to_str().unwrap()],
+        tmp.path(),
+    );
+    assert!(success);
+    let (stdout, _, success) = run_cmd(&["scriptlets", "list"], tmp.path());
+    assert!(success);
+    let output: Vec<Value> = serde_json::from_str(&stdout).unwrap();
+    assert_eq!(output.len(), 1);
+    assert_eq!(output[0]["name"], "user-test.js");
+    assert_eq!(output[0]["size"], 17);
+}
+
+#[test]
+fn test_scriptlets_get() {
+    let tmp = setup_fixture(&json!({}));
+    let js_path = write_js_file(tmp.path(), "test.js", "console.log('hello')");
+    run_cmd(
+        &["scriptlets", "add", "user-test.js", js_path.to_str().unwrap()],
+        tmp.path(),
+    );
+    let (stdout, _, success) = run_cmd(&["scriptlets", "get", "user-test.js"], tmp.path());
+    assert!(success);
+    assert_eq!(stdout, "console.log('hello')");
+}
+
+#[test]
+fn test_scriptlets_get_nonexistent() {
+    let tmp = setup_fixture(&json!({}));
+    let (_, _, success) = run_cmd(&["scriptlets", "get", "user-nope.js"], tmp.path());
+    assert!(!success);
+}
+
+#[test]
+fn test_scriptlets_add_replaces_existing() {
+    let tmp = setup_fixture(&json!({}));
+    let js1 = write_js_file(tmp.path(), "v1.js", "// version 1");
+    run_cmd(
+        &["scriptlets", "add", "user-test.js", js1.to_str().unwrap()],
+        tmp.path(),
+    );
+    let js2 = write_js_file(tmp.path(), "v2.js", "// version 2");
+    run_cmd(
+        &["scriptlets", "add", "user-test.js", js2.to_str().unwrap()],
+        tmp.path(),
+    );
+    let (stdout, _, success) = run_cmd(&["scriptlets", "list"], tmp.path());
+    assert!(success);
+    let output: Vec<Value> = serde_json::from_str(&stdout).unwrap();
+    assert_eq!(output.len(), 1);
+    assert_eq!(output[0]["name"], "user-test.js");
+    assert_eq!(output[0]["size"], 12);
+}
+
+#[test]
+fn test_scriptlets_remove() {
+    let tmp = setup_fixture(&json!({}));
+    let js_path = write_js_file(tmp.path(), "test.js", "// test");
+    run_cmd(
+        &["scriptlets", "add", "user-test.js", js_path.to_str().unwrap()],
+        tmp.path(),
+    );
+    let (_, stderr, success) = run_cmd(&["scriptlets", "remove", "user-test.js"], tmp.path());
+    assert!(success);
+    assert!(stderr.contains("Removed"));
+    let (stdout, _, _) = run_cmd(&["scriptlets", "list"], tmp.path());
+    let output: Vec<Value> = serde_json::from_str(&stdout).unwrap();
+    assert!(output.is_empty());
+}
+
+#[test]
+fn test_scriptlets_remove_nonexistent() {
+    let tmp = setup_fixture(&json!({}));
+    let (_, stderr, success) = run_cmd(&["scriptlets", "remove", "user-nope.js"], tmp.path());
+    assert!(success);
+    assert!(stderr.contains("not found"));
+}
+
+#[test]
+fn test_scriptlets_clear() {
+    let tmp = setup_fixture(&json!({}));
+    let js1 = write_js_file(tmp.path(), "a.js", "// a");
+    let js2 = write_js_file(tmp.path(), "b.js", "// b");
+    run_cmd(
+        &["scriptlets", "add", "user-a.js", js1.to_str().unwrap()],
+        tmp.path(),
+    );
+    run_cmd(
+        &["scriptlets", "add", "user-b.js", js2.to_str().unwrap()],
+        tmp.path(),
+    );
+    let (_, stderr, success) = run_cmd(&["scriptlets", "clear"], tmp.path());
+    assert!(success);
+    assert!(stderr.contains("Cleared"));
+    let (stdout, _, _) = run_cmd(&["scriptlets", "list"], tmp.path());
+    let output: Vec<Value> = serde_json::from_str(&stdout).unwrap();
+    assert!(output.is_empty());
+}
+
+#[test]
+fn test_scriptlets_add_invalid_name() {
+    let tmp = setup_fixture(&json!({}));
+    let js_path = write_js_file(tmp.path(), "test.js", "// test");
+    let (_, _, success) = run_cmd(
+        &["scriptlets", "add", "bad-name.js", js_path.to_str().unwrap()],
+        tmp.path(),
+    );
+    assert!(!success);
+}
+
+#[test]
+fn test_scriptlets_add_nonexistent_file() {
+    let tmp = setup_fixture(&json!({}));
+    let (_, _, success) = run_cmd(
+        &["scriptlets", "add", "user-test.js", "/nonexistent/script.js"],
+        tmp.path(),
+    );
+    assert!(!success);
+}
+
+#[test]
+fn test_scriptlets_add_path_separator_rejected() {
+    let tmp = setup_fixture(&json!({}));
+    let js_path = write_js_file(tmp.path(), "test.js", "// test");
+    let (_, stderr, success) = run_cmd(
+        &["scriptlets", "add", "user-../../etc/passwd.js", js_path.to_str().unwrap()],
+        tmp.path(),
+    );
+    assert!(!success);
+    assert!(stderr.contains("path separator"));
+}
+
+#[test]
+fn test_scriptlets_list_table_format() {
+    let tmp = setup_fixture(&json!({}));
+    let js_path = write_js_file(tmp.path(), "test.js", "console.log('hi')");
+    run_cmd(
+        &["scriptlets", "add", "user-test.js", js_path.to_str().unwrap()],
+        tmp.path(),
+    );
+    let (stdout, _, success) = run_cmd(
+        &["scriptlets", "list", "--format", "table"],
+        tmp.path(),
+    );
+    assert!(success);
+    assert!(stdout.contains("user-test.js"));
+    assert!(stdout.contains("bytes"));
+}
