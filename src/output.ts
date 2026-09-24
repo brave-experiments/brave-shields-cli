@@ -106,6 +106,17 @@ export function renderFilters(filters: string[], format: OutputFormat): string {
   return table.toString();
 }
 
+/**
+ * Result of a mutating command: everything the CLI layer must print.
+ * Library consumers collect this instead of the module writing to streams.
+ */
+export interface RunResult {
+  /** Warning diagnostic (stderr), e.g. the --force browser-running warning. */
+  warning?: string;
+  /** Diagnostic message (stderr), e.g. "Set shields = on for example.com". */
+  message?: string;
+}
+
 /** Diagnostic message for the `set` command (the caller prints it to stderr). */
 export function renderSet(domain: string, setting: string, value: string): string {
   return `Set ${setting} = ${value} for ${domain}`;
