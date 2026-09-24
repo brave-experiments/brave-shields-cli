@@ -17,7 +17,7 @@ export function outputFormatFromStr(s: string): OutputFormat {
  * Minor rendering drift vs comfy-table is explicitly allowed by the port plan.
  */
 function newTable(headers: string[]): Table.Table {
-  return new Table({ head: headers });
+  return new Table({ head: headers, style: { head: [] } });
 }
 
 /** Output body for the `get` command (the caller prints it to stdout). */

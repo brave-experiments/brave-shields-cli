@@ -28,7 +28,7 @@ export async function scriptletsList(
   if (entries.length === 0) {
     return 'No custom scriptlets.';
   }
-  const table = new Table({ head: ['Name', 'Size'] });
+  const table = new Table({ head: ['Name', 'Size'], style: { head: [] } });
   for (const s of entries) {
     table.push([s.name, `${Buffer.byteLength(s.content, 'utf8')} bytes`]);
   }
