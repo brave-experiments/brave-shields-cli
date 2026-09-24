@@ -1,4 +1,3 @@
-import * as nodePath from 'node:path';
 import psList from 'ps-list';
 import { PortError } from './errors.js';
 import type { Channel } from './platform.js';
@@ -142,8 +141,4 @@ export async function checkBraveNotRunning(
     );
   }
   return {};
-}
-
-export function preferencesPath(braveDir: string, profileDir: string): string {
-  return nodePath.join(braveDir, profileDir, 'Preferences');
 }
