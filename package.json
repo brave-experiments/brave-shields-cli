@@ -1,0 +1,54 @@
+{
+   "name": "brave-shields-cli",
+   "version": "1.0.0",
+   "description": "CLI tool to read and write Brave Shields settings.",
+   "license": "MPL-2.0",
+   "homepage": "https://github.com/brave-experiments/brave-shields-cli#readme",
+   "bugs": {
+     "url": "https://github.com/brave-experiments/brave-shields-cli/issues"
+   },
+   "repository": {
+     "type": "git",
+     "url": "git+https://github.com/brave-experiments/brave-shields-cli.git"
+   },
+   "type": "module",
+   "engines": {
+     "node": ">=24"
+   },
+   "bin": {
+     "brave-shields-cli": "./dist/cli.js"
+   },
+   "main": "./dist/index.js",
+   "exports": {
+     ".": {
+       "types": "./dist/index.d.ts",
+       "default": "./dist/index.js"
+     }
+   },
+   "files": [
+     "dist"
+   ],
+   "sideEffects": false,
+   "directories": {
+     "test": "tests"
+   },
+   "scripts": {
+     "build": "tsc",
+     "lint": "tsc --noEmit",
+     "test": "vitest run"
+   },
+   "dependencies": {
+    "@types/node": "^24.13.5",
+    "classic-level": "^3.0.0",
+    "cli-table3": "^0.6.5",
+    "commander": "^15.0.0",
+    "fs-ext": "^2.1.1",
+    "ps-list": "^9.0.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.0"
+  },
+  "allowScripts": {
+    "classic-level@3.0.0": true,
+    "fs-ext@2.1.1": true
+  }
+}
