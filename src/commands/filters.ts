@@ -12,7 +12,7 @@ import type { OutputFormat } from '../output.js';
 import type { RunResult } from '../output.js';
 import { checkBraveNotRunning } from '../preferences.js';
 import type { Channel } from '../platform.js';
-import { getPointer, getPointerMut } from '../json-io.js';
+import { getPointerMut } from '../json-io.js';
 import type { JsonValue } from '../json.js';
 
 function withContext<T>(fn: () => T, context: string): T {
@@ -166,10 +166,14 @@ export async function filtersClear(
 // --- helpers -------------------------------------------------------------
 
 function pointerString(value: JsonValue, keys: readonly string[]): string {
-  const obj = getPointer(value, keys);
-  if (obj === null) return '';
-  const v = obj[keys[keys.length - 1]!];
-  return typeof v === 'string' ? v : '';
+  let cur = value;
+  for (const key of keys) {
+    if (cur === null || typeof cur !== 'object' || Array.isArray(cur)) return '';
+    const next = cur[key];
+    if (next === undefined) return '';
+    cur = next;
+  }
+  return typeof cur === 'string' ? cur : '';
 }
 
 function pointerExists(value: JsonValue, keys: readonly string[]): boolean {
